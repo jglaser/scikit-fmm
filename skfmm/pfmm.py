@@ -2,7 +2,8 @@ from sys import float_info
 import numpy as np
 
 from .cfmm import cFastMarcher
-from bi_cubic_init import BiCubicInit
+from .bi_cubic_init import BiCubicInit
+from .tri_cubic_init import TriCubicInit
 
 FAR, NARROW, FROZEN, MASK = 0, 1, 2, 3
 DISTANCE, TRAVEL_TIME, EXTENSION_VELOCITY = 0, 1, 2
@@ -107,25 +108,40 @@ def distance(phi, dx=1.0, self_test=False, order=2, narrow=0.0,
         of phi at the given point.
 
     """
-    phi, dx, flag, ext_mask, periodic = \
+    phi, dx, flag, ext_mask, periodic_data = \
                         pre_process_args(phi, dx, narrow, periodic)
 
     distance_init = None
     if initorder==2:
+        if isinstance(periodic, bool):
+            periodic = [periodic]*len(phi.shape)
+
         # experimental 2d only bicubic initialization
-        if len(phi.shape) != 2 or dx[0] != dx[1] or order != 2:
-            raise ValueError("Second order narrow band initialization only works for 2d arrays where spacing is the same in each dimension.")
-        dinit = BiCubicInit(phi, 1)
-        mask = dinit.aborders == False
-        distance_init = dinit.d
-        distance_init[mask] = 0.0
-        distance_init *= dx[0]
-        distance_init[phi<0] *= -1
-        distance_init[mask] = float_info.max
+        if len(phi.shape) == 2:
+            if dx[0] != dx[1] or order != 2:
+                raise ValueError("Second order narrow band initialization only works for 2d arrays where spacing is the same in each dimension.")
+            dinit = BiCubicInit(phi, 1)
+            mask = dinit.aborders == False
+            distance_init = dinit.d
+            distance_init[mask] = 0.0
+            distance_init *= dx[0]
+            distance_init[phi<0] *= -1
+            distance_init[mask] = float_info.max
+        elif len(phi.shape) == 3:
+            if order != 2:
+                raise ValueError("Second order narrow band initialization only makes sense together with second order marching (order=2).");
+            dinit = TriCubicInit(phi, dx, periodic)
+            mask = dinit.aborders == False
+            distance_init = dinit.d
+            distance_init[mask] = 0.0
+            distance_init[phi<0] *= -1
+            distance_init[mask] = float_info.max
+        else:
+            raise ValueError("Second order narrow band initialization only works for 2 or 3d arrays.")
 
     d = cFastMarcher(phi, dx, flag, None, ext_mask,
                      int(self_test), DISTANCE, order, narrow,
-                     periodic, distance_init)
+                     periodic_data, distance_init)
     d = post_process_result(d)
     return d
 

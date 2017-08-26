@@ -218,8 +218,8 @@ class BiCubicInit(object):
                 # print
         else:
             #pass
-            print ier, mesg
-            print sx,sy, interp(sx,sy), eq2(sx,sy)
+            print(ier, mesg)
+            print(sx,sy, interp(sx,sy), eq2(sx,sy))
 
 
 if __name__ == '__main__':

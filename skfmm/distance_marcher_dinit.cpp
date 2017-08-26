@@ -15,4 +15,8 @@ void distanceMarcherDInit::initalizeFrozen()
       distance_[i] = dinit_[i];
     }
   }
+
+  // call the base class method for linear interpolation of those points
+  // where the precalculation failed
+  distanceMarcher::initalizeFrozen();
 }
