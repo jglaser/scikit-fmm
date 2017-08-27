@@ -1,4 +1,5 @@
 //extension_velocity_marcher.h
+#pragma once
 
 #include "distance_marcher.h"
 
@@ -20,7 +21,6 @@ protected:
   virtual void             finalizePoint(int i, double phi_i);
   virtual void             cleanUp();
 
-private:
   double *speed_;
   double *f_ext_;
   long *ext_mask_;

@@ -8,6 +8,7 @@
 #include "distance_marcher_dinit.h"
 #include "travel_time_marcher.h"
 #include "extension_velocity_marcher.h"
+#include "extension_velocity_marcher_dinit.h"
 
 #include <stdexcept>
 
@@ -73,20 +74,22 @@ static PyObject *distance_method(PyObject *self, PyObject *args)
   // -- phi, dx, flag, and speed
   // -- and the input error checking should be done
 
-  PyObject *pphi, *pdx, *pflag, *pspeed, *pext_mask, *pdinit;
+  PyObject *pphi, *pdx, *pflag, *pspeed, *pext_mask, *pdinit, *pfinit;
   int       self_test, mode, order, periodic;
   PyArrayObject *phi, *dx, *flag, *speed, *distance, *f_ext, *ext_mask;
   PyArrayObject *dinit;
+  PyArrayObject *finit;
   double narrow=0;
   distance = 0;
   f_ext    = 0;
   speed    = 0;
   ext_mask = 0;
   dinit    = 0;
+  finit    = 0;
 
-  if (!PyArg_ParseTuple(args, "OOOOOiiidiO", &pphi, &pdx, &pflag,
+  if (!PyArg_ParseTuple(args, "OOOOOiiidiOO", &pphi, &pdx, &pflag,
                         &pspeed, &pext_mask, &self_test, &mode,
-                        &order, &narrow, &periodic, &pdinit))
+                        &order, &narrow, &periodic, &pdinit, &pfinit))
   {
     return NULL;
   }
@@ -309,6 +312,35 @@ static PyObject *distance_method(PyObject *self, PyObject *args)
     case EXTENSION_VELOCITY:
     {
       double * local_fext = (double *) PyArray_DATA(f_ext);
+
+      if (pdinit != Py_None && pfinit != Py_None)
+      {
+        dinit = (PyArrayObject *)PyArray_FROMANY(pdinit, PyArray_DOUBLE, 1,
+                                                 10, NPY_IN_ARRAY);
+        finit = (PyArrayObject *)PyArray_FROMANY(pfinit, PyArray_DOUBLE, 1,
+                                                 10, NPY_IN_ARRAY);
+        // we should be testing the dimention here for safety.
+
+        double * local_dinit   = (double *) PyArray_DATA(dinit);
+        double * local_finit   = (double *) PyArray_DATA(finit);
+
+        marcher = new extensionVelocityMarcherDInit(
+            local_phi,
+            local_dx,
+            local_flag,
+            local_distance,
+            PyArray_NDIM(phi),
+            shape,
+            self_test,
+            order,
+            local_ext_mask,
+            local_speed,
+            local_fext,
+            narrow,
+            periodic,
+            local_dinit,
+            local_finit);
+      } else {
       marcher = new extensionVelocityMarcher(
         local_phi,
         local_dx,
@@ -323,6 +355,7 @@ static PyObject *distance_method(PyObject *self, PyObject *args)
         local_fext,
         narrow,
         periodic);
+      }
     }
     break;
   default: error=1;
@@ -340,6 +373,8 @@ static PyObject *distance_method(PyObject *self, PyObject *args)
       Py_XDECREF(flag);
       Py_XDECREF(speed);
       Py_XDECREF(ext_mask);
+      Py_XDECREF(dinit);
+      Py_XDECREF(finit);
       return NULL;
     }
 
@@ -349,6 +384,7 @@ static PyObject *distance_method(PyObject *self, PyObject *args)
   Py_XDECREF(speed);
   Py_XDECREF(ext_mask);
   Py_XDECREF(dinit);
+  Py_XDECREF(finit);
 
   switch (error)
   {

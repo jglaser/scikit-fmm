@@ -10,7 +10,8 @@ def configuration(parent_package='', top_path=None):
                                    "distance_marcher.cpp",
                                    "distance_marcher_dinit.cpp",
                                    "travel_time_marcher.cpp",
-                                   "extension_velocity_marcher.cpp"],
+                                   "extension_velocity_marcher.cpp",
+                                   "extension_velocity_marcher_dinit.cpp"],
                           include_dirs=['.'])
     config.add_extension("pheap", sources=["pheap.cpp", "heap.cpp"])
     return config

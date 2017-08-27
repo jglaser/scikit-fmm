@@ -126,8 +126,8 @@ def distance(phi, dx=1.0, self_test=False, order=2, narrow=0.0,
         if isinstance(periodic, bool):
             periodic = [periodic]*len(phi.shape)
 
-        # experimental 2d only bicubic initialization
         if len(phi.shape) == 2:
+            # experimental 2d bicubic initialization
             if dx[0] != dx[1] or order != 2:
                 raise ValueError("Second order narrow band initialization only works for 2d arrays where spacing is the same in each dimension.")
             dinit = BiCubicInit(phi, 1)
@@ -140,7 +140,7 @@ def distance(phi, dx=1.0, self_test=False, order=2, narrow=0.0,
         elif len(phi.shape) == 3:
             if order != 2:
                 raise ValueError("Second order narrow band initialization only makes sense together with second order marching (order=2).");
-            dinit = TriCubicInit(phi, h=dx, periodic=periodic, seed=seed)
+            dinit = TriCubicInit(phi, flag, h=dx, periodic=periodic, seed=seed, mode=DISTANCE)
             mask = dinit.aborders == False
             distance_init = dinit.d
             distance_init[mask] = 0.0
@@ -151,7 +151,7 @@ def distance(phi, dx=1.0, self_test=False, order=2, narrow=0.0,
 
     d = cFastMarcher(phi, dx, flag, None, ext_mask,
                      int(self_test), DISTANCE, order, narrow,
-                     periodic_data, distance_init)
+                     periodic_data, distance_init, None)
     d = post_process_result(d)
     return d
 
@@ -214,13 +214,14 @@ def travel_time(phi, speed, dx=1.0, self_test=False, order=2,
         = pre_process_args(phi, dx, narrow, periodic)
     t = cFastMarcher(phi, dx, flag, speed, ext_mask,
                      int(self_test), TRAVEL_TIME, order, narrow,
-                     periodic, None)
+                     periodic, None, None)
     t = post_process_result(t)
     return t
 
 
 def extension_velocities(phi, speed, dx=1.0, self_test=False, order=2,
-                         ext_mask=None, narrow=0.0, periodic=False):
+                         ext_mask=None, narrow=0.0, periodic=False,
+                         initorder=1, seed=None):
     """Extend the velocities defined at the zero contour of phi, in the
     normal direction, to the rest of the domain. Extend the velocities
     such that grad f_ext dot grad d = 0 where where f_ext is the
@@ -270,6 +271,16 @@ def extension_velocities(phi, speed, dx=1.0, self_test=False, order=2,
                individual directions. The default value is False,
                i.e., no periodic boundaries in any direction.
 
+    initorder : int, optional
+                order of the active set initialization method. Default is
+                linear interpolation (initorder=1). A value of 2 selects
+                bi-/tricubic interpolation with 2 or 3 dimensions. This method
+                is second order accurate, but much slower.
+
+    seed : int, optional (only with initorder=2)
+           A random number generator seed used to perturb initial conditions
+           when solving the nonlinear equations for tricubic interpolation.
+
     Returns
     -------
     (d, f_ext) : tuple
@@ -277,12 +288,44 @@ def extension_velocities(phi, speed, dx=1.0, self_test=False, order=2,
         extension velocities f_ext.
 
     """
-    phi, dx, flag, ext_mask, periodic = \
+    phi, dx, flag, ext_mask, periodic_data = \
                 pre_process_args(phi, dx, narrow, periodic, ext_mask)
+
+    distance_init = None
+    velocity_init = None
+    if initorder==2:
+        if isinstance(periodic, bool):
+            periodic = [periodic]*len(phi.shape)
+
+        if len(phi.shape) == 2:
+            raise ValueError("Second order narrow band initialization not currently supported in 2d for extension_velocities.")
+            # experimental 2d bicubic initialization
+            #if dx[0] != dx[1] or order != 2:
+            #    raise ValueError("Second order narrow band initialization only works for 2d arrays where spacing is the same in each dimension.")
+            #dinit = BiCubicInit(phi, 1)
+            #mask = dinit.aborders == False
+            #distance_init = dinit.d
+            #distance_init[mask] = 0.0
+            #distance_init *= dx[0]
+            #distance_init[phi<0] *= -1
+            #distance_init[mask] = float_info.max
+        elif len(phi.shape) == 3:
+            if order != 2:
+                raise ValueError("Second order narrow band initialization only makes sense together with second order marching (order=2).");
+            tricubic_init = TriCubicInit(phi, flag, speed=speed, ext_mask=ext_mask, h=dx, periodic=periodic, seed=seed, mode=EXTENSION_VELOCITY)
+            mask = tricubic_init.aborders == False
+            distance_init = tricubic_init.d
+            distance_init[mask] = 0.0
+            distance_init[phi<0] *= -1
+            distance_init[mask] = float_info.max
+            velocity_init = tricubic_init.f_ext
+
+        else:
+            raise ValueError("Second order narrow band initialization only works for 2 or 3d arrays.")
 
     distance, f_ext = cFastMarcher(phi, dx, flag, speed, ext_mask,
                                    int(self_test), EXTENSION_VELOCITY,
-                                   order, narrow, periodic, None)
+                                   order, narrow, periodic_data, distance_init, velocity_init)
     distance = post_process_result(distance)
     f_ext = post_process_result(f_ext)
 
