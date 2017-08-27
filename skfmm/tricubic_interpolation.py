@@ -3,6 +3,8 @@ import pylab as plt
 import numpy as np
 import itertools
 
+from .tricubic_arithmetic_expressions import *
+
 import scipy.sparse as sp
 
 # This module implements the tricubic interpolation on a regular grid
@@ -170,18 +172,7 @@ class TriCubicInterp(object):
     def __call__(self, p):
         coeff, _, d = self.get_coeff_point(p)
 
-        l = 0
-        value = 0.0
-
-        #Lekien Marsden Eq. (10) uses alpha_l = alpha_(1+i+4j+16k) == alpha_ijk
-#        d *= self.h
-        for k in range(4):
-            for j in range(4):
-                for i in range(4):
-                    value += coeff[l] * d[0]**i * d[1]**j * d[2]**k
-                    l +=1
-
-        return value
+        return tricubic_interpolate(coeff,d[0],d[1],d[2])
 
     def get_coeff_point(self,p):
         # nearest grid point, rounding down
