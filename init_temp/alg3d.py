@@ -75,3 +75,42 @@ for i in range(3):
     if i != 2:
         print(', ',end='')
 print(']')
+
+print()
+print('Jacobian elements')
+print()
+print(to_python(df0dx))
+print()
+
+print()
+print(to_python(df0dy))
+print()
+
+print()
+print(to_python(df0dz))
+print()
+
+print()
+print(to_python(df1dx))
+print()
+
+print()
+print(to_python(df1dy))
+print()
+
+print()
+print(to_python(df1dz))
+print()
+
+print()
+print(to_python(df2dx))
+print()
+
+print()
+print(to_python(df2dy))
+print()
+
+print()
+print(to_python(df2dz))
+print()
+

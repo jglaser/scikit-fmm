@@ -3,6 +3,8 @@ import pylab as plt
 import numpy as np
 import itertools
 
+import numba as nb
+
 # This module implements the tricubic interpolation on a regular grid
 # described in
 # http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.89.7835
