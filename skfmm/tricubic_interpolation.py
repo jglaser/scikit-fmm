@@ -215,15 +215,6 @@ class TriCubicInterp(object):
         # this is the b vector from equation 11 in Lekien and Marsden
         ijk = [tuple(wrap(ix+ii, iy+jj, iz+kk,x,y,z,periodic)) for ii,jj,kk in offsets]
 
-#        b = tuple(itertools.chain (
-#            (phi[i,j,k] for i,j,k in ijk),
-#            (dfdx(phi,i,j,k,periodic)/self.h[0] for i,j,k in ijk),
-#            (dfdy(phi,i,j,k,periodic)/self.h[1] for i,j,k in ijk),
-#            (dfdz(phi,i,j,k,periodic)/self.h[2] for i,j,k in ijk),
-#            (d2fdxdy(phi,i,j,k,periodic)/self.h[0]/self.h[1] for i,j,k in ijk),
-#            (d2fdxdz(phi,i,j,k,periodic)/self.h[0]/self.h[2] for i,j,k in ijk),
-#            (d2fdydz(phi,i,j,k,periodic)/self.h[1]/self.h[2] for i,j,k in ijk),
-#            (d3fdxdydz(phi,i,j,k,periodic)/self.h[0]/self.h[1]/self.h[2] for i,j,k in ijk)))
         b = tuple(itertools.chain (
             (phi[i,j,k] for i,j,k in ijk),
             (dfdx(phi,i,j,k,periodic) for i,j,k in ijk),

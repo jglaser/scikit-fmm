@@ -87,20 +87,6 @@ class TriCubicInit(object):
         for i in range(xmin,xmax):
             for j in range(ymin,ymax):
                 for k in range(zmin,zmax):
-#                    for d in [-1,1]:
-#                        if phi[i,j,k] * phi[wrap(i+d,j,k,x,y,z,self.periodic)] < 0:
-#                            aborders[i,j,k] = True
-#                            border_cells[i][j][k] = True
-#                           #border_cells[ii][jj-1][kk] = True
-#                        elif phi[i,j,k] * phi[wrap(i,j+d,k,x,y,z,self.periodic)] < 0:
-#                            aborders[i,j,k] = True
-##                            border_cells[i][j][k] = True
-#                            #border_cells[ii-1][jj][kk] = True
-#                        elif phi[i,j,k] * phi[wrap(i,j,k+d,x,y,z,self.periodic)] < 0:
-#                            aborders[i,j,k] = True
-##                            border_cells[i][j][k] = True
-#                            #border_cells[ii-1][jj][kk] = True
-
                      for dx in [-1,0,1]:
                         for dy in [-1,0,1]:
                             for dz in [-1,0,1]:
@@ -154,7 +140,7 @@ class TriCubicInit(object):
         if success:
             dx,dy,dz = px-x0,py-y0,pz-z0
 
-            print("OK", i,j,k,px,py,pz)
+#            print("OK", i,j,k,px,py,pz)
 
             periodic = self.periodic
             h = self.h
