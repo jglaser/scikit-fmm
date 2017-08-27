@@ -1,6 +1,8 @@
+from __future__ import division
 import pylab as plt
 import numpy as np
 import itertools
+
 # This module implements the tricubic interpolation on a regular grid
 # described in
 # http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.89.7835
@@ -15,21 +17,14 @@ def wrap(i,j,k, lx, ly, lz, periodic):
     ix = i
     iy = j
     iz = k
+    # the root finding algorithm doesn't know when it crosses a boundary,
+    # so we have to allow multiple images with periodic boundary conditions
     if periodic[0]:
-        if ix >= lx:
-            ix -= lx
-        elif ix < 0:
-            ix += lx
+        ix -= (ix//lx)*lx
     if periodic[1]:
-        if iy >= ly:
-            iy -= ly
-        elif iy < 0:
-            iy += ly
+        iy -= (iy//ly)*ly
     if periodic[2]:
-        if iz >= lz:
-            iz -= lz
-        elif iz < 0:
-            iz += lz
+        iz -= (iz//lz)*lz
     return ix, iy, iz
 
 def dfdx(phi,i,j,k,periodic):
@@ -170,15 +165,13 @@ class TriCubicInterp(object):
         self.periodic = periodic
 
     def __call__(self, p):
-        coeff = self.get_coeff_point(p)
-
-        # evaluate the expression
-        d = np.remainder(p,self.h)
+        coeff, _, d = self.get_coeff_point(p)
 
         l = 0
-        value = 0
+        value = 0.0
 
         #Lekien Marsden Eq. (10) uses alpha_l = alpha_(1+i+4j+16k) == alpha_ijk
+#        d *= self.h
         for k in range(4):
             for j in range(4):
                 for i in range(4):
@@ -188,7 +181,12 @@ class TriCubicInterp(object):
         return value
 
     def get_coeff_point(self,p):
+        # nearest grid point, rounding down
         cell = np.floor_divide(p,self.h)
+
+        # distance to grid point, scaled
+        d = (p/self.h-cell)
+
         ix,iy,iz = map(int, cell)
 
         phi = self.phi
@@ -196,12 +194,13 @@ class TriCubicInterp(object):
 
         ix, iy, iz = wrap(ix,iy,iz, x,y,z, self.periodic)
 
-        if ix<0 or ix >= self.phi.shape[0]: assert False
-        if iy<0 or iy >= self.phi.shape[1]: assert False
-        if iz<0 or iz >= self.phi.shape[2]: assert False
+        periodic = self.periodic
+        if not periodic[0] and ix >= self.phi.shape[0]-1: assert False, "{} out of bounds".format(p)
+        if not periodic[1] and iy >= self.phi.shape[1]-1: assert False, "{} out of bounds".format(p)
+        if not periodic[2] and iz >= self.phi.shape[2]-1: assert False, "{} out of bounds".format(p)
 
         if (ix,iy,iz) in self.cache:
-            return self.cache[(ix,iy,iz)]
+            return self.cache[(ix,iy,iz)], cell, d
 
         # Lekien and Marsden, Fig. 2
         offsets = np.array(((0, 0, 0),
@@ -214,21 +213,32 @@ class TriCubicInterp(object):
                             (1, 1, 1)))
 
         # this is the b vector from equation 11 in Lekien and Marsden
-        ijk = [tuple(wrap(ix+ii, iy+jj, iz+kk,x,y,z,self.periodic)) for ii,jj,kk in offsets]
+        ijk = [tuple(wrap(ix+ii, iy+jj, iz+kk,x,y,z,periodic)) for ii,jj,kk in offsets]
+
+#        b = tuple(itertools.chain (
+#            (phi[i,j,k] for i,j,k in ijk),
+#            (dfdx(phi,i,j,k,periodic)/self.h[0] for i,j,k in ijk),
+#            (dfdy(phi,i,j,k,periodic)/self.h[1] for i,j,k in ijk),
+#            (dfdz(phi,i,j,k,periodic)/self.h[2] for i,j,k in ijk),
+#            (d2fdxdy(phi,i,j,k,periodic)/self.h[0]/self.h[1] for i,j,k in ijk),
+#            (d2fdxdz(phi,i,j,k,periodic)/self.h[0]/self.h[2] for i,j,k in ijk),
+#            (d2fdydz(phi,i,j,k,periodic)/self.h[1]/self.h[2] for i,j,k in ijk),
+#            (d3fdxdydz(phi,i,j,k,periodic)/self.h[0]/self.h[1]/self.h[2] for i,j,k in ijk)))
         b = tuple(itertools.chain (
             (phi[i,j,k] for i,j,k in ijk),
-            (dfdx(phi,i,j,k,self.periodic)/self.h[0] for i,j,k in ijk),
-            (dfdy(phi,i,j,k,self.periodic)/self.h[1] for i,j,k in ijk),
-            (dfdz(phi,i,j,k,self.periodic)/self.h[2] for i,j,k in ijk),
-            (d2fdxdy(phi,i,j,k,self.periodic)/self.h[0]/self.h[1] for i,j,k in ijk),
-            (d2fdxdz(phi,i,j,k,self.periodic)/self.h[0]/self.h[2] for i,j,k in ijk),
-            (d2fdydz(phi,i,j,k,self.periodic)/self.h[1]/self.h[2] for i,j,k in ijk),
-            (d3fdxdydz(phi,i,j,k,self.periodic)/self.h[0]/self.h[1]/self.h[2] for i,j,k in ijk)))
+            (dfdx(phi,i,j,k,periodic) for i,j,k in ijk),
+            (dfdy(phi,i,j,k,periodic) for i,j,k in ijk),
+            (dfdz(phi,i,j,k,periodic) for i,j,k in ijk),
+            (d2fdxdy(phi,i,j,k,periodic) for i,j,k in ijk),
+            (d2fdxdz(phi,i,j,k,periodic) for i,j,k in ijk),
+            (d2fdydz(phi,i,j,k,periodic) for i,j,k in ijk),
+            (d3fdxdydz(phi,i,j,k,periodic) for i,j,k in ijk)))
 
         coeff = np.dot(Binv,np.array(b))
+
         assert not (ix,iy,iz) in self.cache
         self.cache[(ix,iy,iz)] = coeff
-        return coeff
+        return coeff, cell, d
 
 
 if __name__ == '__main__':

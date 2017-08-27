@@ -61,7 +61,7 @@ def post_process_result(result):
 
 
 def distance(phi, dx=1.0, self_test=False, order=2, narrow=0.0,
-             periodic=False, initorder=1):
+             periodic=False, initorder=1, seed=None):
     """Return the signed distance from the zero contour of the array phi.
 
 
@@ -100,6 +100,16 @@ def distance(phi, dx=1.0, self_test=False, order=2, narrow=0.0,
                individual directions. The default value is False,
                i.e., no periodic boundaries in any direction.
 
+    initorder : int, optional
+                order of the active set initialization method. Default is
+                linear interpolation (initorder=1). A value of 2 selects
+                bi-/tricubic interpolation with 2 or 3 dimensions. This method
+                is second order accurate, but much slower.
+
+    seed : int, optional (only with initorder=2)
+           A random number generator seed used to perturb initial conditions
+           when solving the nonlinear equations for tricubic interpolation.
+
     Returns
     -------
     d : an array the same shape as phi
@@ -130,7 +140,7 @@ def distance(phi, dx=1.0, self_test=False, order=2, narrow=0.0,
         elif len(phi.shape) == 3:
             if order != 2:
                 raise ValueError("Second order narrow band initialization only makes sense together with second order marching (order=2).");
-            dinit = TriCubicInit(phi, dx, periodic)
+            dinit = TriCubicInit(phi, h=dx, periodic=periodic, seed=seed)
             mask = dinit.aborders == False
             distance_init = dinit.d
             distance_init[mask] = 0.0

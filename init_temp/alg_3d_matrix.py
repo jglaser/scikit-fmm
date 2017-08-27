@@ -20,10 +20,12 @@ for k in range(4):
             expr += a[l] * x**i * y**j * z**k
             l +=1
 
-# from the Lekien paper Fig. 2
+print(expr)
+# use convention from Lekien Marsden paper Fig. 2
 offsets = np.array(((0,0,0), (1,0,0), (0,1,0),
                      (1,1,0), (0,0,1), (1,0,1),
                      (0,1,1), (1,1,1)))
+
 #offsets = list(itertools.product((0,1), (0,1), (0,1)))
 #offsets = np.array(((0, 0, 0),
 #                    (0, 0, 1),
@@ -42,6 +44,7 @@ for xo,yo,zo in offsets:
     v = str(expr.subs(x,xo).subs(y,yo).subs(z,zo)).replace("a","")
     v = v.replace("+", ",")
     v = "("+v+",)"
+    print(v)
     for index in map(int,eval(v)):
         row[index] = 1
     print(row)
