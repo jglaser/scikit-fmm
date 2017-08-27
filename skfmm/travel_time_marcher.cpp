@@ -3,6 +3,7 @@
 #include "travel_time_marcher.h"
 #include "math.h"
 #include "heap.h"
+#include <stdexcept>
 
 void travelTimeMarcher::initalizeFrozen()
 {
@@ -76,15 +77,13 @@ double travelTimeMarcher::solveQuadratic(int i, const double &a,
   c -= 1/pow(speed_[i],2);
   double r0=0;
   double det = pow(b,2)-4*a*c;
-  if (det>0)
+  if (det>=0)
   {
     r0 = (-b+sqrt(det))/2.0/a;
   }
   else
   {
-    return 0;
+    throw std::runtime_error("Negative discriminant in time marcher quadratic.");
   }
   return r0;
 }
-
-
