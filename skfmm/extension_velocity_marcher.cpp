@@ -3,7 +3,6 @@
 #include "extension_velocity_marcher.h"
 
 #include <stdexcept>
-#include <iostream>
 
 #include "math.h"
 
