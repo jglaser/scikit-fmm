@@ -13,37 +13,38 @@ c0, c1, c2 = symbols('c:3')  # the unknown point on the zero level-set
 
 expr = 0
 l = 0
-for i in range(4):
+# we stick to the convention of Lekien Marsden Eq. (10), who use alpha_l = alpha_(1+i+4j+16k) == alpha_ijk
+for k in range(4):
     for j in range(4):
-        for k in range(4):
+        for i in range(4):
             expr += a[l] * x**i * y**j * z**k
             l +=1
 
-
-# offsets = np.array(((0,0,0), (1,0,0), (0,1,0),
-#                     (1,1,0), (0,0,1), (1,0,1),
-#                     (0,1,1), (1,1,1)))
+# from the Lekien paper Fig. 2
+offsets = np.array(((0,0,0), (1,0,0), (0,1,0),
+                     (1,1,0), (0,0,1), (1,0,1),
+                     (0,1,1), (1,1,1)))
 #offsets = list(itertools.product((0,1), (0,1), (0,1)))
-offsets = np.array(((0, 0, 0),
-                    (0, 0, 1),
-                    (0, 1, 0),
-                    (0, 1, 1),
-                    (1, 0, 0),
-                    (1, 0, 1),
-                    (1, 1, 0),
-                    (1, 1, 1)))
+#offsets = np.array(((0, 0, 0),
+#                    (0, 0, 1),
+#                    (0, 1, 0),
+#                    (0, 1, 1),
+#                    (1, 0, 0),
+#                    (1, 0, 1),
+#                   (1, 1, 0),
+#                   (1, 1, 1)))
 matrix = []
 
 # ok these are the first 8 rows...
 for xo,yo,zo in offsets:
     row = np.zeros(64)
-    print (xo,yo,zo), expr.subs(x,xo).subs(y,yo).subs(z,zo)
+    print((xo,yo,zo), expr.subs(x,xo).subs(y,yo).subs(z,zo))
     v = str(expr.subs(x,xo).subs(y,yo).subs(z,zo)).replace("a","")
     v = v.replace("+", ",")
     v = "("+v+",)"
-    for index in eval(v):
+    for index in map(int,eval(v)):
         row[index] = 1
-    print row
+    print(row)
     matrix.append(tuple(row))
 
 
@@ -51,7 +52,7 @@ for xo,yo,zo in offsets:
 for xo,yo,zo in offsets:
     row = np.zeros(64)
     aa = expr.diff(x).subs(x,xo).subs(y,yo).subs(z,zo)
-    print (xo,yo,zo), aa
+    print((xo,yo,zo), aa)
     v = str(aa)
     v1 = re.sub(r"a(\d+)", r"1", v)
     v1 = v1.replace("+", ",")
@@ -65,7 +66,7 @@ for xo,yo,zo in offsets:
     #print v2
     for mult, index in zip(v1,v2):
         row[index] = mult
-    print row
+    print(row)
     matrix.append(tuple(row))
 
 
@@ -86,7 +87,7 @@ for xo,yo,zo in offsets:
     #print v2
     for mult, index in zip(v1,v2):
         row[index] = mult
-    print row
+    print(row)
     matrix.append(tuple(row))
 
 # now dfdz of this expression
@@ -106,7 +107,7 @@ for xo,yo,zo in offsets:
     #print v2
     for mult, index in zip(v1,v2):
         row[index] = mult
-    print row
+    print(row)
     matrix.append(tuple(row))
 
 # now d2fdxdy of this expression
@@ -123,7 +124,7 @@ for xo,yo,zo in offsets:
     v2 = eval(v2)
     for mult, index in zip(v1,v2):
         row[index] = mult
-    print row
+    print(row)
     matrix.append(tuple(row))
 
 # now d2fdxdz of this expression
@@ -140,7 +141,7 @@ for xo,yo,zo in offsets:
     v2 = eval(v2)
     for mult, index in zip(v1,v2):
         row[index] = mult
-    print row
+    print(row)
     matrix.append(tuple(row))
 
 
@@ -158,14 +159,14 @@ for xo,yo,zo in offsets:
     v2 = eval(v2)
     for mult, index in zip(v1,v2):
         row[index] = mult
-    print row
+    print(row)
     matrix.append(tuple(row))
 
 # now d3fdxdydz of this expression
 for xo,yo,zo in offsets:
     row = np.zeros(64)
     v = str(expr.diff(x).diff(y).diff(z).subs(x,xo).subs(y,yo).subs(z,zo))
-    print v
+    print(v)
     v1 = re.sub(r"a(\d+)", r"1", v)
     v1 = v1.replace("+", ",")
     v1 = "("+v1+",)"
@@ -176,10 +177,24 @@ for xo,yo,zo in offsets:
     v2 = eval(v2)
     for mult, index in zip(v1,v2):
         row[index] = mult
-    print row
+    print(row)
     matrix.append(tuple(row))
 
 barr = np.array(matrix)
 
 binv = np.linalg.inv(barr)
-print binv
+print(binv)
+
+#output in python syntax
+print('Binv=np.array([',end='')
+
+for i in range(64):
+    print('[',end='')
+    for j in range(64):
+        print(int(binv[i,j]),end='')
+        if j != 63:
+            print(',',end='')
+    print(']',end='')
+    if i != 63:
+        print(', ',end='')
+print('])')
