@@ -107,6 +107,7 @@ void extensionVelocityMarcher::finalizePoint(int i, double phi_i)
   {
     lspeed[dim]=0;
     ldistance[dim]=0;
+    double abs_d_i = fabs(distance_[i]);
     for (int j=-1; j<2; j+=2) // each direction
     {
       int naddr = _getN(i,dim,j,Mask);
@@ -115,7 +116,8 @@ void extensionVelocityMarcher::finalizePoint(int i, double phi_i)
         //determine which direction, in this dimension, is nearest to
         //the front. Calculate the distance to front in this direction
         double d = distance_[i] - distance_[naddr];
-        if (ldistance[dim]==0 || ldistance[dim]>d)
+        double abs_d = fabs(distance_[naddr]);
+        if (abs_d_i > abs_d)
         {
           ldistance[dim] = d;
           lspeed[dim] = f_ext_[naddr];
